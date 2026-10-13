@@ -1,3 +1,5 @@
+<div align="center">
+
 # Sedenion
 
 A programming language for mathematics, written in C++17 with no external dependencies.
@@ -7,25 +9,96 @@ expression `x^2 + 1` is a formula. A script is a sequence of statements. An expr
 on its own line prints its value. A function can take optional arguments and gather the
 extra ones into a list, and a record can carry functions that are called as methods.
 
+</div>
+
+---
+
+## The problem
+
+Serious math on a computer is split across tools that do not share a value.
+
+Python will turn `1/3 + 1/7` into `0.47619047619047616` unless you stop and import a fraction type. NumPy inverts an integer matrix into decimals. SymPy can keep a square root exact, and Pint can convert kilometers per hour, and they rarely agree to live in the same expression. Mathematica holds this together, inside a proprietary notebook. Julia and MATLAB can too, after you assemble the packages or buy the toolbox.
+
+The derivation is the part that usually stays on paper. A CAS will hand you the root. The page a teacher, a referee, or your own notes would accept is a separate product, when it exists at all.
+
+Sedenion is one language for that whole job. A fraction stays a fraction. A square root stays a radical. A formula stays a formula. A speed knows it is a speed. And `steps(...)` prints the working, including the root it threw away.
+
 ```text
-> 1/3 + 1/6
-1/2
-> 50!
-30414093201713378043612608166064768844377641568960512000000000000
-> A = [1, 2; 3, 4] ; A^-1
+> 1/3 + 1/7
+10/21
+> sqrt(8)
+2sqrt(2)
+> [1, 2; 3, 4]^-1
 [ -2     1
  3/2  -1/2]
-> sym x
-> integrate(x * e^x, x)
-x*e^x - e^x
-> solve(x^2 - 5x + 6 == 0, x)
+> sym x ; solve(x^2 - 5x + 6 == 0, x)
 {2, 3}
-> ∑(k = 1..100) k^2
-338350
-> 100[km] / 2[h] to [m/s]
-13.8888888888889 m/s
-> quat(0, 1, 0, 0) * quat(0, 0, 1, 0)
-k
+```
+
+---
+
+## The same question, two ways
+
+<table>
+<tr>
+<td width="50%" valign="top">
+
+**Before the math can start**
+
+```python
+from fractions import Fraction
+import numpy as np
+
+print(Fraction(1, 3) + Fraction(1, 7))
+print(np.linalg.inv([[1.0, 2.0], [3.0, 4.0]]))
+```
+
+```text
+10/21
+[[-2.   1. ]
+ [ 1.5 -0.5]]
+```
+
+The fraction took an import. The inverse gave the decimals up.
+
+</td>
+<td width="50%" valign="top">
+
+**In Sedenion**
+
+```text
+1/3 + 1/7
+
+[1, 2; 3, 4]^-1
+```
+
+```text
+10/21
+[ -2     1
+ 3/2  -1/2]
+```
+
+Same questions. The exact object is the ordinary value, so there is nothing to opt into.
+
+</td>
+</tr>
+</table>
+
+---
+
+## What changes when the math is the language
+
+### The answer you meant is the answer you get
+
+`1/3` is a rational. `sqrt(8)` is `2sqrt(2)`, and `sqrt(4 + 2sqrt(3))` denests to `1 + sqrt(3)`. `2^200` is the integer, all of it. A decimal happens when you write one, or when you ask `float`.
+
+That is the difference from a numeric language, where exactness is a mode you enter. Here exactness is the value, and approximation is the request.
+
+### The working comes back with the result
+
+`steps` prints the derivation. `working` hands it to your program as text and LaTeX, so a script can keep the reasoning, not only the root.
+
+```text
 > steps(solve(sqrt(x + 1) == x - 1, x))
 solve sqrt(x + 1) == x - 1 for x
   move everything to one side: -x + sqrt(x + 1) + 1 = 0
@@ -41,47 +114,31 @@ solve sqrt(x + 1) == x - 1 for x
 {3}
 ```
 
-## Features
+### Units, formulas, and matrices are the same expression
 
-- **Exact numbers**: arbitrary-precision integers and rationals (hand-written bignum), exact
-  square roots of rationals, plus floating-point reals and complex numbers, with automatic
-  promotion between them.
-- **Math-like syntax**: `2x`, `x²`, `√x`, `|x|`, `n!`, `A'`, `∑`, `∏`, `∈`, `∪`, `∩`, `π`, and
-  an ASCII spelling for all of them.
-- **Linear algebra**: exact Gaussian elimination, determinants, inverses, rank, RREF,
-  null spaces, characteristic polynomials and eigenvalues.
-- **Sets and ranges**: set algebra, comprehensions, power sets, cartesian products, and lazy
-  ranges with arbitrary steps.
-- **Symbolic algebra**: simplification, expansion, factoring over ℚ, differentiation,
-  integration (table, substitution, parts, partial fractions), equation and system solving,
-  limits and Taylor series.
-- **Step-by-step working**: `steps(expr)` prints the rules `diff`, `integrate`, `solve` and
-  `limit` applied (product and chain rules, substitution, integration by parts, partial
-  fractions, factoring, the quadratic formula, rejected extraneous roots, L'Hôpital's rule).
-  `working(expr)` returns that derivation as `{result, text, latex}`.
-- **Rewrite rules and assumptions**: `rule` / `rewrite` for your own algebraic identities,
-  `assume` / `forget` so `simplify` can take signed square roots, and `check` for a
-  symbolic or sampled comparison.
-- **Hypercomplex numbers**: quaternions, octonions and sedenions with exact arithmetic,
-  quaternion rotations, commutators and associators.
-- **Geometric algebra**: multivectors in Cl(p, q), the geometric, wedge and inner products,
-  and rotors.
-- **Records, modules and files**: `{a: 1, b: 2}`, string interpolation, `format`,
-  `import "lib.sed" as M` / `export` with private module globals, and reading and writing text files.
-- **Numerical calculus**: adaptive Gauss–Kronrod quadrature, Brent and Newton root finding,
-  minimization, and an adaptive RK45 ODE solver.
-- **Physical units**: dimension-checked arithmetic, conversions with `to`, SI prefixes, and
-  physical constants.
-- **Functions**: optional parameters (`fn f(x, n = 1)`), a rest parameter that gathers
-  extra arguments into a list (`fn f(x, ...rest)`), and method calls (`point.norm()`)
-  that pass the record as the first argument. A call on an imported module, `A.double(21)`,
-  passes the arguments written in the parentheses.
-- **A real language**: closures, recursion, loops, lists, records, strings, modules, a
-  bytecode VM with a garbage collector, a REPL, and readable error messages with stack traces.
+`100[km] / 2[h] to [m/s]` is a speed, and adding meters to seconds is an error. `sym x` turns `x` into a formula you can differentiate, integrate, and solve. `A^-1` on an integer matrix comes back in fractions. `quat(0, 1, 0, 0) * quat(0, 0, 1, 0)` is `k`.
 
-## Building
+You write it the way the page looks: `2x`, `x²`, `√x`, `|x|`, `n!`, `∑`, `∈`. Every one of those has an ASCII spelling.
 
-You need CMake 3.16 or newer and a C++17 compiler.
+It is also a programming language. Functions take optional arguments and a rest parameter, records carry methods, and a file you `import` keeps its own globals. The examples under `examples/` are programs, not transcripts.
+
+---
+
+## Where it wins
+
+**Against the Python scientific stack.** SymPy, NumPy, and Pint each solve a piece, and you become the interpreter between them. Sedenion has one value, so a radical, a matrix of rationals, a unit, and a symbolic integral do not have to be introduced to each other. You give up the ecosystem. You get the expression.
+
+**Against Mathematica.** Mathematica is the broad, polished standard, and it should be when you need that breadth. Sedenion is the language you can read, build, and ship: C++17, no dependencies, one binary. The derivation is a function in the program. `working(expr)` returns `{result, text, latex}`.
+
+**Against Julia.** Julia is the right tool when the job is speed and packages. Rationals, symbols, and units there are libraries you compose (`//`, Symbolics, Unitful). In Sedenion they are the syntax. `1/3`, `sym x`, and `100[km] / 2[h]` need no import.
+
+**Against MATLAB.** MATLAB is built for numeric matrices, and the symbolic work lives in a toolbox. Invert an integer matrix in Sedenion and the entries come back as fractions. `A^-1` is the expression you wanted to write.
+
+---
+
+## Run it
+
+A C++17 compiler and CMake 3.16 or newer. Nothing else to install.
 
 ```text
 cmake -S . -B build
@@ -89,38 +146,42 @@ cmake --build build --config Release
 ctest --test-dir build -C Release
 ```
 
-On Windows with Visual Studio the executable ends up in `build/Release/sedenion.exe`;
-with single-configuration generators it is `build/sedenion`.
-
-## Usage
+On Windows with Visual Studio the program is `build/Release/sedenion.exe`. With a single-configuration generator it is `build/sedenion`.
 
 ```text
-sedenion                   # REPL
-sedenion examples/tour.sed # run a script
+sedenion                      # REPL
+sedenion examples/tour.sed    # a script
 sedenion -e "factorint(2^64 + 1)"
 ```
 
-Type `help()` in the REPL for a list of builtins by category, or `help("solve")` for one.
+In the REPL, `help()` lists the builtins and `help("solve")` explains one.
 
-## Documentation and examples
+---
 
-- [docs/LANGUAGE.md](docs/LANGUAGE.md) is the language reference.
-- `examples/` holds runnable programs: a language tour, number theory, linear algebra,
-  calculus, physics with units, sets and sums, hypercomplex numbers, step-by-step working,
-  records and files, rewrite rules, geometric algebra, exact radicals, and functions
-  with optional parameters, rest parameters, and methods.
+## Look at a real program
 
-## Layout
+| If you want to see… | Open |
+|---|---|
+| The language in one sitting | [`examples/tour.sed`](examples/tour.sed) |
+| A solution with the working shown | [`examples/step_by_step.sed`](examples/step_by_step.sed) |
+| Fractions, roots, and denesting | [`examples/radicals.sed`](examples/radicals.sed) |
+| An inverse that stays exact | [`examples/linear_algebra.sed`](examples/linear_algebra.sed) |
+| Speeds, constants, and dimension checks | [`examples/physics.sed`](examples/physics.sed) |
+| Quaternions through sedenions | [`examples/hypercomplex.sed`](examples/hypercomplex.sed) |
 
-| Directory | Contents |
+The reference is [docs/LANGUAGE.md](docs/LANGUAGE.md). The name is the 16-dimensional number: quaternions, octonions, and sedenions are values in the language, beside the rationals and the formulas.
+
+<details>
+<summary>Repository map</summary>
+
+| Directory | What lives there |
 |---|---|
 | `src/lexer`, `src/parser` | UTF-8 lexer and Pratt parser |
-| `src/compiler`, `src/vm` | bytecode compiler, stack VM, garbage collector |
-| `src/numeric` | BigInt, Rational, and the numeric tower |
-| `src/linalg`, `src/sets`, `src/calculus`, `src/units` | domain libraries |
-| `src/cas` | the computer algebra system, including steps, rules and LaTeX |
-| `src/hyper` | quaternions, octonions and sedenions |
-| `src/ga` | geometric algebra |
-| `src/stdlib` | builtin functions |
-| `tests/unit` | C++ unit tests |
-| `tests/scripts` | `.sed` scripts checked against `# expect:` comments |
+| `src/compiler`, `src/vm` | Bytecode compiler, stack machine, garbage collector |
+| `src/numeric` | Big integers, rationals, radicals |
+| `src/cas` | Simplification, calculus, solving, steps, rewrite rules, LaTeX |
+| `src/linalg`, `src/sets`, `src/calculus`, `src/units` | Matrices, sets, numerical calculus, physical units |
+| `src/hyper`, `src/ga` | Hypercomplex numbers and geometric algebra |
+| `tests/scripts` | Language tests, each checked against `# expect:` comments |
+
+</details>
